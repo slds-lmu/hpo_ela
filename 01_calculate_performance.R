@@ -10,7 +10,8 @@ PAR_FACTOR = 10
 
 
 data = readRDS("data/optimizers.rds") %>%
-  as_tibble()
+  as_tibble() %>%
+  filter(batch_nr <= BUDGET)
 
 
 targets = data %>%
@@ -69,7 +70,7 @@ ert_data = foreach(tmp_method = unique(individual_runtime_data$method), .combine
 
 
 # par10 is 10000, set to NA for heatmap
-ert_data[which(ert_data$ert == 10000), "ert"] = NA
+ert_data[which(ert_data$ert == BUDGET * REPL * PAR_FACTOR), "ert"] = NA
 
 ggplot(ert_data, aes(x = method, y = task)) +
   geom_tile(aes(fill = ert)) +
