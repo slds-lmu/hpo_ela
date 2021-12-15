@@ -8,23 +8,37 @@ REPL = 10
 BUDGET = 100
 PAR_FACTOR = 10
 
-
+# HPO data
 data = readRDS("data/optimizers.rds") %>%
   as_tibble() %>%
   filter(batch_nr <= BUDGET)
+
+# BBOB data
+data = readRDS("data/bbob_full.Rds") %>%
+  as_tibble() %>%
+  mutate(task = sprintf("bbob_f%02d_i%02d", fid, iid)) %>% 
+  select(-c(fid, iid)) %>% 
+  filter(batch_nr <= BUDGET)
+
 
 
 targets = data %>%
   filter(method == "random_search") %>%
   group_by(task, repl) %>%
-  summarize(best_performance = min(best_logloss)) %>%
+  # HPO
+  # summarize(best_performance = min(best_logloss)) %>%
+  # BBOB
+  summarize(best_performance = min(best_y)) %>%
   ungroup() %>%
   group_by(task) %>%
   summarize(median_rs = median(best_performance)) %>%
   ungroup()
 
 merged_data = data %>%
-  select(-c("classif.glmnet.alpha", "classif.glmnet.s", "best_logloss")) %>%
+  # this for HPO data:
+  # select(-c("classif.glmnet.alpha", "classif.glmnet.s", "best_logloss")) %>%
+  # this for BBOB data:
+  select(-c("x1", "x2", "best_y")) %>%
   #filter(method != "random_search") %>%
   inner_join(targets, by = "task")
 #   group_by(method, task, repl) %>%
@@ -40,12 +54,18 @@ individual_runtime_data = foreach(tmp_method = unique(merged_data$method), .comb
   foreach(tmp_task = unique(merged_data$task), .combine = rbind) %:%
   foreach(tmp_repl = unique(merged_data$repl), .combine = rbind) %do% {
     tmp = merged_data %>%
-      filter(method == tmp_method & task == tmp_task & repl == tmp_repl & classif.logloss <= median_rs) %>%
+      # HPO
+      # filter(method == tmp_method & task == tmp_task & repl == tmp_repl & classif.logloss <= median_rs) %>%
+      # BBOB
+      filter(method == tmp_method & task == tmp_task & repl == tmp_repl & y <= median_rs) %>%
       filter(batch_nr == min(batch_nr)) %>%
       as.data.frame()
     
     if(nrow(tmp) == 0) {
-      tmp = data.frame(classif.logloss = NA, batch_nr = NA, method = tmp_method, task = tmp_task, repl = tmp_repl, median_rs = NA)
+      # HPO
+      # tmp = data.frame(classif.logloss = NA, batch_nr = NA, method = tmp_method, task = tmp_task, repl = tmp_repl, median_rs = NA)
+      # BBOB
+      tmp = data.frame(y = NA, batch_nr = NA, method = tmp_method, task = tmp_task, repl = tmp_repl, median_rs = NA)
     }
     tmp
   }
