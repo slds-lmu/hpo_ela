@@ -9,12 +9,14 @@ library(tidyr)
 
 lgr::get_logger("bbotk")$set_threshold("warn")
 
+mbo = opt("mbo", loop_function = bayesopt_ego, acq_function = AcqFunctionEI$new(), acq_optimizer = AcqOptimizer$new(opt("global_local"), terminator = trm("none")))
+
 optimizers <- c(
   random_search = opt("random_search"),
   grid_search = opt("grid_search"),
   cmaes = opt("cmaes"),
   gensa = opt("gensa"),
-  mbo = opt("mbo")
+  mbo = mbo
   # design = opt("design_points")
 )
 
@@ -29,12 +31,12 @@ problems$optim_instance <- lapply(1L:nrow(problems), function(p_id) {
   
   fn <- makeBBOBFunction(dimensions = 2L, fid = problem$fid, iid = problem$iid)
   
-  domain <- ps(
-    x1 = p_dbl(-5, 5),
-    x2 = p_dbl(-5, 5)
+  domain <- paradox::ps(
+    x1 = paradox::p_dbl(-5, 5),
+    x2 = paradox::p_dbl(-5, 5)
   )
-  codomain <- ps(
-    y = p_dbl(tags = "minimize")
+  codomain <- paradox::ps(
+    y = paradox::p_dbl(tags = "minimize")
   )
   
   objective <- ObjectiveRFun$new(
@@ -63,6 +65,17 @@ run_archives <- lapply(1L:nrow(problems), function(p_id) {
   set.seed(seed)
   
   optimizer <- opt(problem$optimizer_id)
+
+  if (inherits(optimizer, "OptimizerMbo")) {
+    upper = (problem$optim_instance[[1L]]$search_space$upper - problem$optim_instance[[1L]]$search_space$lower) / sqrt(problem$optim_instance[[1L]]$search_space$length)
+    lower = upper / 100
+    
+    learner = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS")
+    learner$fallback = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS", nugget.stability = 10^-8)
+    
+    surrogate = default_surrogate(problem$optim_instance[[1L]], learner = learner)
+    optimizer$surrogate = surrogate
+  }
 
   optimizer$optimize(problem$optim_instance[[1L]])
   problem$optim_instance[[1L]]$archive
