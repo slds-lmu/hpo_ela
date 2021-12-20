@@ -1,6 +1,6 @@
 library(bbotk)
 library(mlr3verse)
-library(mlr3mbo)
+library(mlr3mbo) #@coco
 
 library(smoof)
 
