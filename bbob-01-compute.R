@@ -1,6 +1,6 @@
 library(bbotk)
 library(mlr3verse)
-library(mlr3mbo) #@coco
+library(mlr3mbo)  # @coco
 
 library(smoof)
 
@@ -31,7 +31,7 @@ problems$optim_instance <- lapply(1L:nrow(problems), function(p_id) {
   
   fn <- makeBBOBFunction(dimensions = 2L, fid = problem$fid, iid = problem$iid)
   
-  domain <- paradox::ps(
+  domain <- paradox::ParamSet$new(
     x1 = paradox::p_dbl(-5, 5),
     x2 = paradox::p_dbl(-5, 5)
   )
