@@ -1,96 +1,125 @@
+# ==== libraries ====
+
+# mlr3verse
 library(bbotk)
 library(mlr3verse)
-library(mlr3mbo)  # @coco
+library(mlr3mbo)  # @coco branch
 
-library(smoof)
+# library(smoof) #
 
+# tidyverse
 library(dplyr)
 library(tidyr)
 
-lgr::get_logger("bbotk")$set_threshold("warn")
+# future
+library(future)
+library(future.apply)
 
-mbo = opt("mbo", loop_function = bayesopt_ego, acq_function = AcqFunctionEI$new(), acq_optimizer = AcqOptimizer$new(opt("global_local"), terminator = trm("none")))
+# ==== main experiment function ====
 
-optimizers <- c(
-  random_search = opt("random_search"),
-  grid_search = opt("grid_search"),
-  cmaes = opt("cmaes"),
-  gensa = opt("gensa"),
-  mbo = mbo
-  # design = opt("design_points")
+run_bbob_experiments <- function(fids, iids, dims, repls, optimizers) {
+  
+  problems <- expand_grid(
+    fid = fids,
+    iid = iids,
+    repl = repls,
+    dim = dims,
+    optimizer_id = names(optimizers)
+  )
+  
+  p <- progressr::progressor(steps = nrow(problems))
+  
+  future_lapply(1L:nrow(problems), function(p_id) {
+    
+    # ==== Setup ====
+    
+    problem <- problems[p_id,]
+    fn <- smoof::makeBBOBFunction(dimensions = problem$dim, fid = problem$fid, iid = problem$iid)
+    
+    seed <- 1e8 * problem$dim + 1e6 * problem$fid + 1e4 * problem$iid + 1e2 * problem$repl + which(names(optimizers) == problem$optimizer_id)
+    set.seed(seed)
+    
+    lgr::get_logger("bbotk")$set_threshold("warn")
+    
+    p(message = sprintf("FID=%02d, IID=%02d, DIM=%02d, REPL=%02d, OPT=%.3s",
+                        problem$fid, problem$iid, problem$dim, problem$repl, problem$optimizer_id))
+
+    # ==== Define Optimization Instance ====
+    
+    objective <- ObjectiveRFun$new(
+      fun = function(xs) return(c(y = fn(xs))),
+      domain = ParamSet$new(
+        params = lapply(1:problem$dim, function(d) ParamDbl$new(paste0("x", d), lower = -5, upper = 5))
+      ),
+      codomain = ps(
+        y = p_dbl(tags = "minimize")
+      ),
+      properties = "deterministic"
+    )
+    
+    terminator <- trm("evals", n_evals = 50L * problem$dim)
+    
+    optim_instance <- OptimInstanceSingleCrit$new(
+      objective = objective,
+      terminator = terminator
+    )
+  
+    # ==== Run Optimization ====
+    
+    optimizer <- optimizers[[problem$optimizer_id]]$clone(deep = TRUE)
+
+    if (inherits(optimizer, "OptimizerMbo")) {
+      upper = (optim_instance$search_space$upper - optim_instance$search_space$lower) / sqrt(optim_instance$search_space$length)
+      lower = upper / 100
+      
+      learner = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS")
+      learner$fallback = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS", nugget.stability = 10^-8)
+      
+      surrogate = default_surrogate(optim_instance, learner = learner)
+      optimizer$surrogate = surrogate
+    }
+
+    optimizer$optimize(optim_instance)
+    
+    archive_data <- optim_instance$archive$data
+    cbind(archive_data[,-c("timestamp")], problem)
+  }, future.seed = TRUE)
+}
+
+# ==== Setup and Run Experiments ====
+
+gc()
+plan(multisession, workers = availableCores() - 1)
+progressr::handlers("progress")
+
+mbo = opt("mbo",
+  loop_function = bayesopt_ego,
+  acq_function = AcqFunctionEI$new(),
+  acq_optimizer = AcqOptimizer$new(opt("global_local"), terminator = trm("none"))
 )
 
-IIDS <- 1L:1L
-FIDS <- 1L:24L
-N_REPL <- 10L
-
-problems <- expand_grid(fid = FIDS, iid = IIDS, repl = 1L:N_REPL, optimizer_id = names(optimizers))
-
-problems$optim_instance <- lapply(1L:nrow(problems), function(p_id) {
-  problem <- problems[p_id,]
-  
-  fn <- makeBBOBFunction(dimensions = 2L, fid = problem$fid, iid = problem$iid)
-  
-  domain <- paradox::ParamSet$new(
-    x1 = paradox::p_dbl(-5, 5),
-    x2 = paradox::p_dbl(-5, 5)
-  )
-  codomain <- paradox::ps(
-    y = paradox::p_dbl(tags = "minimize")
-  )
-  
-  objective <- ObjectiveRFun$new(
-    fun = function(xs) return(c(y = fn(xs))),
-    domain = domain,
-    codomain = codomain,
-    properties = "deterministic"
-  )
-  
-  terminator <- trm("evals", n_evals = 100L)
-  
-  OptimInstanceSingleCrit$new(
-    objective = objective,
-    terminator = terminator
+progressr::with_progress({
+  run_archives <- run_bbob_experiments(
+    fids = 1L:5L,
+    iids = 1L,
+    dims = 2L,
+    repls = 1L:5L,
+    optimizers = c(
+      random_search = opt("random_search"),
+      grid_search = opt("grid_search"),
+      cmaes = opt("cmaes"),
+      gensa = opt("gensa")
+      mbo = mbo,
+      # design = opt("design_points")
+    )
   )
 })
 
-pb <- progress::progress_bar$new(total = nrow(problems))
+# ==== Postprocess and Save Results ====
 
-run_archives <- lapply(1L:nrow(problems), function(p_id) {
-  pb$tick()
-  
-  problem <- problems[p_id,]
-
-  seed <- 1e6 * problem$fid + 1e4 * problem$iid + 1e2 * problem$repl + which(names(optimizers) == problem$optimizer_id)
-  set.seed(seed)
-  
-  optimizer <- opt(problem$optimizer_id)
-
-  if (inherits(optimizer, "OptimizerMbo")) {
-    upper = (problem$optim_instance[[1L]]$search_space$upper - problem$optim_instance[[1L]]$search_space$lower) / sqrt(problem$optim_instance[[1L]]$search_space$length)
-    lower = upper / 100
-    
-    learner = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS")
-    learner$fallback = lrn("regr.km", covtype = "matern5_2", upper = upper, lower = lower, multistart = 3L, optim.method = "BFGS", nugget.stability = 10^-8)
-    
-    surrogate = default_surrogate(problem$optim_instance[[1L]], learner = learner)
-    optimizer$surrogate = surrogate
-  }
-
-  optimizer$optimize(problem$optim_instance[[1L]])
-  problem$optim_instance[[1L]]$archive
-})
-
-# lapply(run_archives, function(archive) min(archive$data$y))
-
-full_data <- lapply(1L:nrow(problems), function(i) {
-  arch <- run_archives[[i]]$data %>% select(x1, x2, y, batch_nr)
+full_data <- lapply(run_archives, function(arch) {
   arch$best_y <- cummin(arch$y)
-  arch$method <- problems[i,"optimizer_id"]
-  arch$fid <- problems[i,"fid"]
-  arch$iid <- problems[i,"iid"]
-  arch$repl <- problems[i,"repl"]
-  
+
   arch
 }) %>% Reduce(rbind, .)
 
