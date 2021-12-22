@@ -33,6 +33,8 @@ run_bbob_experiments <- function(fids, iids, dims, repls, optimizers) {
     
     # ==== Setup ====
     
+    library(mlr3verse)
+    
     problem <- problems[p_id,]
     fn <- smoof::makeBBOBFunction(dimensions = problem$dim, fid = problem$fid, iid = problem$iid)
     
@@ -108,8 +110,8 @@ progressr::with_progress({
       random_search = opt("random_search"),
       grid_search = opt("grid_search"),
       cmaes = opt("cmaes"),
-      gensa = opt("gensa")
-      mbo = mbo,
+      gensa = opt("gensa"),
+      mbo = mbo
       # design = opt("design_points")
     )
   )
