@@ -58,6 +58,8 @@ eval_wrapper = function(job, data, instance, ...) {
     surrogate = default_surrogate(optim_instance, learner = learner)
     mbo$surrogate = surrogate
     mbo
+  } else if (optimizer_id == "grid_search") {
+    opt("grid_search", resolution = ceiling((50L * dim) ^ (1 / dim)))
   } else {
     opt(optimizer_id)
   }
