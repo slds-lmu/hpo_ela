@@ -73,7 +73,7 @@ eval_wrapper = function(job, data, instance, ...) {
 addAlgorithm("eval_wrapper", fun = eval_wrapper)
 
 # setup
-setup = setDT(expand.grid(dim = c(2L, 3L, 5L, 10L), fid = 1:5, iid = 1L))  # FIXME: check this again, not sure anymore ...
+setup = setDT(expand.grid(dim = c(2L, 3L, 5L, 10L, 20L), fid = 1:24, iid = 1L:5L))  # FIXME: check this again, not sure anymore ...
 
 # add problems
 prob_designs = map(seq_len(nrow(setup)), function(i) {
