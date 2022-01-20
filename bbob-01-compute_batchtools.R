@@ -38,7 +38,7 @@ eval_wrapper = function(job, data, instance, ...) {
     properties = "deterministic"
   )
   
-  terminator = trm("evals", n_evals = 50L * dim)
+  terminator = if (optimizer_id == "random_search") trm("evals", n_evals = 400L * dim) else trm("evals", n_evals = 50L * dim)
   
   optim_instance = OptimInstanceSingleCrit$new(
     objective = objective,
@@ -73,7 +73,7 @@ eval_wrapper = function(job, data, instance, ...) {
 addAlgorithm("eval_wrapper", fun = eval_wrapper)
 
 # setup
-setup = setDT(expand.grid(dim = c(2L, 5L, 20L, 40L), fid = 1:5, iid = 1L))  # FIXME: check this again, not sure anymore ...
+setup = setDT(expand.grid(dim = c(2L, 3L, 5L, 10L), fid = 1:5, iid = 1L))  # FIXME: check this again, not sure anymore ...
 
 # add problems
 prob_designs = map(seq_len(nrow(setup)), function(i) {

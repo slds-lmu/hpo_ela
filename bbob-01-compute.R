@@ -108,7 +108,7 @@ progressr::with_progress({
     repls = 1L:5L,
     optimizers = c(
       random_search = opt("random_search"),
-      grid_search = opt("grid_search"),
+      grid_search = opt("grid_search"),  # FIXME: resolution of params needs to be adjusted
       cmaes = opt("cmaes"),
       gensa = opt("gensa"),
       mbo = mbo
