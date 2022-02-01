@@ -43,8 +43,8 @@ eval_ = function(job, data, instance, ...) {
       cost = p_dbl(lower = -10, upper = 10, tags = "log", trafo = function(x) exp(x)),
       gamma = p_dbl(lower = -10, upper = 10, tags = "log", trafo = function(x) exp(x))
     )
-  } else if (learenr_id == "xgboost") {
-    stopifnot(dim %in% c(2L, 5L, 10L))
+  } else if (learner_id == "xgboost") {
+    stopifnot(dim %in% c(2L, 3L, 5L, 10L))
     learner = lrn("classif.xgboost")
     learner$predict_type = "prob"
     learner$param_set$values$booster = "dart"
@@ -86,9 +86,9 @@ eval_ = function(job, data, instance, ...) {
   xs = list(...)
   tuner = xs$tuner$clone(deep = TRUE)
   factor = if (xs$tuner_id == "random_search") {
-    400L
+    40L  # FIXME: 400
   } else {
-    50L
+    5L  # FIXME: 50
   }
   terminator = trm("evals", n_evals = factor * dim)
 
@@ -146,7 +146,7 @@ instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", 
 prob_designs = map(seq_len(nrow(instances)), function(i) {
   seed = instances[i, ]$openml_id
   set.seed(seed)
-  resampling = rsmp("repeated_cv", folds = 10L, repeats = 10L)
+  resampling = rsmp("cv", folds = 10L)  # FIXME: this used to be 10 times 10 fold
   task = tasks[[as.character(instances[i, ]$openml_id)]]$clone(deep = TRUE)
   resampling$instantiate(task)
   learner_id = as.character(instances[i, ]$learner_id)
@@ -166,7 +166,7 @@ mbo = TunerMbo$new(loop_function = bayesopt_ego, acq_function = AcqFunctionEI$ne
 
 tuners = list(
   random_search = tnr("random_search"),
-  grid_search = tnr("grid_search"),
+  grid_search = tnr("grid_search", resolution = ceiling((5L * dim) ^ (1 / dim))),  # FIXME: 50
   cmaes = tnr("cmaes"),
   gensa = tnr("gensa"),
   #irace = tnr("irace"),  # NOTE: fix log file if we want to include this optimizer
@@ -186,8 +186,12 @@ for (tuner_id in names(tuners)) {
 
 jobs = findJobs()
 # jobs need 10 cpus each so we can parallelize the resampling manually
-resources.default = list(walltime = 3600L * 24L, memory = 2 * 1024L, ntasks = 1L, ncpus = 10L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
+resources.default = list(walltime = 3600L * 24L, memory = 2 * 4024L, ntasks = 1L, ncpus = 10L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(jobs, resources = resources.default)
+
+tab = getJobTable()
+test_jobs = tab[repl == 1 & grepl("1461", problem)]
+submitJobs(test_jobs, resources = resources.default)
 
 tab = getJobTable()
 results = map_dtr(names(tuners), function(tuner_id) {
