@@ -25,10 +25,9 @@ eval_ = function(job, data, instance, ...) {
   logger = lgr::get_logger("bbotk")
   logger$set_threshold("warn")
 
-  future::plan("multicore", workers = 10L)  # we parallelize the resampling manually
+  future::plan("sequential")
 
-  pl = ppl("robustify", task = instance$task$clone(deep = TRUE), impute_missings = TRUE, factors_to_numeric = TRUE)
-  task = pl$train(instance$task$clone(deep = TRUE))[[1L]]
+  task = instance$task$clone(deep = TRUE)
   resampling = instance$resampling$clone(deep = TRUE)
   learner_id = instance$learner_id
   dim = instance$dim
@@ -44,41 +43,28 @@ eval_ = function(job, data, instance, ...) {
       gamma = p_dbl(lower = -10, upper = 10, tags = "log", trafo = function(x) exp(x))
     )
   } else if (learner_id == "xgboost") {
-    stopifnot(dim %in% c(2L, 3L, 5L, 10L))
+    stopifnot(dim %in% c(2L, 3L, 5L))
     learner = lrn("classif.xgboost")
     learner$predict_type = "prob"
-    learner$param_set$values$booster = "dart"
+    learner$param_set$values$booster = "gbtree"
     search_space = if (dim == 2L) {
       ps(
-        nrounds = p_dbl(lower = 2, upper = 8, tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
+        nrounds = p_dbl(lower = log(3), upper = log(2000), tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
         eta = p_dbl(lower = -7, upper = 0, tags = "log", trafo = function(x) exp(x))
       )
     } else if (dim == 3L) {
       ps(
-        nrounds = p_dbl(lower = 2, upper = 8, tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
+        nrounds = p_dbl(lower = log(3), upper = log(2000), tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
         eta = p_dbl(lower = -7, upper = 0, tags = "log", trafo = function(x) exp(x)),
         lambda = p_dbl(lower = -7, upper = 7, tags = "log", trafo = function(x) exp(x))
       )
     } else if (dim == 5L) {
       ps(
-        nrounds = p_dbl(lower = 2, upper = 8, tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
+        nrounds = p_dbl(lower = log(3), upper = log(2000), tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
         eta = p_dbl(lower = -7, upper = 0, tags = "log", trafo = function(x) exp(x)),
         lambda = p_dbl(lower = -7, upper = 7, tags = "log", trafo = function(x) exp(x)),
         gamma = p_dbl(lower = -10, upper = 2, tags = "log", trafo = function(x) exp(x)),
         alpha = p_dbl(lower = -7, upper = 7, tags = "log", trafo = function(x) exp(x))
-      )
-    } else if (dim == 10L) {
-      ps(
-        nrounds = p_dbl(lower = 2, upper = 8, tags = c("int", "log"), trafo = function(x) as.integer(round(exp(x)))),
-        eta = p_dbl(lower = -7, upper = 0, tags = "log", trafo = function(x) exp(x)),
-        lambda = p_dbl(lower = -7, upper = 7, tags = "log", trafo = function(x) exp(x)),
-        gamma = p_dbl(lower = -10, upper = 2, tags = "log", trafo = function(x) exp(x)),
-        alpha = p_dbl(lower = -7, upper = 7, tags = "log", trafo = function(x) exp(x)),
-        subsample = p_dbl(lower = 0.1, upper = 1),
-        colsample_bytree = p_dbl(lower = 0.01, upper = 1),
-        colsample_bylevel = p_dbl(lower = 0.01, upper = 1),
-        rate_drop = p_dbl(lower = 0, upper = 1),
-        skip_drop = p_dbl(lower = 0, upper = 1)
       )
     }
   }
@@ -86,9 +72,9 @@ eval_ = function(job, data, instance, ...) {
   xs = list(...)
   tuner = xs$tuner$clone(deep = TRUE)
   factor = if (xs$tuner_id == "random_search") {
-    40L  # FIXME: 400
+    400L
   } else {
-    5L  # FIXME: 50
+    50L
   }
   terminator = trm("evals", n_evals = factor * dim)
 
@@ -116,6 +102,10 @@ eval_ = function(job, data, instance, ...) {
     terminator = terminator
   )
 
+  if (xs$tuner_id == "grid_search") {
+    tuner$param_set$values$resolution = ceiling((50L * dim) ^ (1 / dim))
+  }
+
   if (xs$tuner_id == "mbo") {
     upper = (instance$search_space$upper - instance$search_space$lower) / sqrt(instance$search_space$length)
     lower = upper / 100
@@ -138,15 +128,17 @@ openml_ids = c(40983, 469, 41156, 6332, 23381, 1590, 1461, 40975, 41146, 40685)
 learner_ids = c("svm, xgboost")
 tasks = setNames(sapply(openml_ids, function(id) {
   task = tsk("oml", data_id = id)
+  pl = ppl("robustify", task = task, impute_missings = TRUE, factors_to_numeric = TRUE)
+  task = pl$train(task)[[1L]]
+  task
 }), nm = as.character(openml_ids))
-instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", dim = 2L),
-      expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L, 10L))))
+instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", dim = 2L), expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L))))
 
 # add problems
 prob_designs = map(seq_len(nrow(instances)), function(i) {
   seed = instances[i, ]$openml_id
   set.seed(seed)
-  resampling = rsmp("cv", folds = 10L)  # FIXME: this used to be 10 times 10 fold
+  resampling = rsmp("cv", folds = 10L)  # NOTE: this used to be 10 times 10 fold
   task = tasks[[as.character(instances[i, ]$openml_id)]]$clone(deep = TRUE)
   resampling$instantiate(task)
   learner_id = as.character(instances[i, ]$learner_id)
@@ -166,7 +158,7 @@ mbo = TunerMbo$new(loop_function = bayesopt_ego, acq_function = AcqFunctionEI$ne
 
 tuners = list(
   random_search = tnr("random_search"),
-  grid_search = tnr("grid_search", resolution = ceiling((5L * dim) ^ (1 / dim))),  # FIXME: 50
+  grid_search = tnr("grid_search"),
   cmaes = tnr("cmaes"),
   gensa = tnr("gensa"),
   #irace = tnr("irace"),  # NOTE: fix log file if we want to include this optimizer
@@ -185,8 +177,7 @@ for (tuner_id in names(tuners)) {
 }
 
 jobs = findJobs()
-# jobs need 10 cpus each so we can parallelize the resampling manually
-resources.default = list(walltime = 3600L * 24L, memory = 2 * 4024L, ntasks = 1L, ncpus = 10L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
+resources.default = list(walltime = 3600L * 24L * 7, memory = 4 * 4024L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(jobs, resources = resources.default)
 
 tab = getJobTable()
