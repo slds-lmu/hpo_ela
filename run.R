@@ -125,14 +125,15 @@ saveRegistry(reg)
 
 # tasks and instances
 openml_ids = c(40983, 469, 41156, 6332, 23381, 1590, 1461, 40975, 41146, 40685)
-learner_ids = c("svm, xgboost")
 tasks = setNames(sapply(openml_ids, function(id) {
   task = tsk("oml", data_id = id)
   pl = ppl("robustify", task = task, impute_missings = TRUE, factors_to_numeric = TRUE)
   task = pl$train(task)[[1L]]
   task
 }), nm = as.character(openml_ids))
-instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", dim = 2L), expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L))))
+#instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", dim = 2L), expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L))))
+instances = setDT(expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L)))
+
 
 # add problems
 prob_designs = map(seq_len(nrow(instances)), function(i) {
@@ -176,15 +177,19 @@ for (tuner_id in names(tuners)) {
   addJobTags(ids, tuner_id)
 }
 
-jobs = findJobs()
-resources.default = list(walltime = 3600L * 24L * 7, memory = 4 * 4024L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
+tab = getJobTable()
+jobs = data.table(job.id = tab$job.id, dim = map_dbl(tab$prob.pars, function(x) x$dim), tags = tab$tags)
+jobs[, walltime := 3600L * 24L * 7L]
+jobs[tags != "random_search", walltime := walltime * (dim / 5L)]
+resources.default = list(memory = 4024L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(jobs, resources = resources.default)
 
-tab = getJobTable()
-test_jobs = tab[repl == 1 & grepl("1461", problem)]
-submitJobs(test_jobs, resources = resources.default)
+expired = jobs[job.id %in% findExpired()$job.id]
+resources.large = list(memory = 8048L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
+submitJobs(expired, resources = resources.large)
 
 tab = getJobTable()
+tab = tab[job.id %in% findDone()$job.id]
 results = map_dtr(names(tuners), function(tuner_id) {
   if (tuner_id != "irace") {
     ids = tab[grepl(tuner_id, x = tags)]$job.id
@@ -196,8 +201,8 @@ results = map_dtr(names(tuners), function(tuner_id) {
       data[, repl := job$repl]
       data
     })
-    do.call(rbind, results$result)
+    rbindlist(results$result, fill = TRUE)
   }
-})
+}, .fill = TRUE)
 saveRDS(results, "/gscratch/lschnei8/ela_newdata_large_results.rds")
 
