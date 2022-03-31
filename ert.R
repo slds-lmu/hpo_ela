@@ -2,7 +2,7 @@ library(data.table)
 library(mlr3misc)
 library(ggplot2)
 library(gridExtra)
-performances = readRDS("optimizers.rds")
+performances = readRDS("data/optimizers.rds")
 performances[, max_budget := dim * 50L]
 performances = performances[batch_nr <= max_budget]
 

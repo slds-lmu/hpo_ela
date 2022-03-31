@@ -72,7 +72,7 @@ eval_ = function(job, data, instance, ...) {
   xs = list(...)
   tuner = xs$tuner$clone(deep = TRUE)
   factor = if (xs$tuner_id == "random_search") {
-    400L
+    200L  # FIXME:
   } else {
     50L
   }
@@ -181,7 +181,7 @@ tab = getJobTable()
 jobs = data.table(job.id = tab$job.id, dim = map_dbl(tab$prob.pars, function(x) x$dim), tags = tab$tags)
 jobs[, walltime := 3600L * 24L * 7L]
 jobs[tags != "random_search", walltime := walltime * (dim / 5L)]
-resources.default = list(memory = 4024L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
+resources.default = list(memory = 16384, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(jobs, resources = resources.default)
 
 expired = jobs[job.id %in% findExpired()$job.id]

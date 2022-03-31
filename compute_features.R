@@ -1,10 +1,11 @@
 library(flacco)
-library(tidyverse)
+library(data.table)
+library(mlr3misc)
 
-glmnet_ela <- read_rds("design.rds")
+data = read_rds("data/design.rds")
 
-sets_to_compute <- c("ela_meta", "ic", "limo", "ela_distr", "pca", "nbc", "disp")
-ela_features <- data.frame()
+sets_to_compute = c("ela_meta", "ic", "limo", "ela_distr", "pca", "nbc", "disp")
+sets_to_compute = c("ela_meta", "ela_distr", "ic")
 
 number_of_peaks = function(x, smoothing.bandwidth = "SJ", 
   modemass.threshold = 0.01, ...) {
@@ -25,15 +26,30 @@ number_of_peaks = function(x, smoothing.bandwidth = "SJ",
 
 assignInNamespace("number_of_peaks", number_of_peaks, ns = "flacco")
 
-for (ds in glmnet_ela %>% select(task) %>% unique() %>% unlist()) {
-  cat(paste0(ds, "\n"))
-  
-  feat_object <- createFeatureObject(X = glmnet_ela %>% filter(task == ds) %>% select(classif.glmnet.s, classif.glmnet.alpha) %>% as.matrix,
-                                     y = glmnet_ela %>% filter(task == ds) %>% select(classif.logloss) %>% unlist)
-  feat_set <- calculateFeatures(feat_object, control = list(subset = sets_to_compute))
-  
-  ela_features <- rbind(ela_features, cbind(ds, feat_set %>% as.data.frame()))
-}
+data[, problem := paste0(task, dim)]
+params = c("nrounds", "eta", "lambda", "gamma", "alpha")
+
+ela_features = map_dtr(unique(data$task), function(task_) {
+  map_dtr(unique(data$dim), function(dim_) {
+    tmp = data[task == task_ & dim == dim_]
+    if (NROW(tmp) == 0L) return(data.table())
+    params_ = params[seq_len(dim_)]
+
+    feat_object = createFeatureObject(X = tmp[, params_, with = FALSE], y = tmp[["classif.logloss"]])
+    feat_set = calculateFeatures(feat_object, control = list(subset = sets_to_compute))
+    cbind(as.data.table(feat_set), data.table(task = task_, dim = dim_))
+  })
+})
 
 saveRDS(ela_features, "ela_features_design.rds")
+
+data = ela_features[, - c("task", "dim", grep("costs", colnames(ela_features), value = TRUE)), with = FALSE]
+
+data = scale(data)
+
+kk = kmeans(data, 4, nstart = 25)
+
+library(factoextra)
+
+fviz_cluster(kk, data = data)
 
