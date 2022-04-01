@@ -4,7 +4,7 @@
 wd = dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(wd)
 
-library(foreach)
+library(doParallel)
 
 set.seed(100)
 cl = makeCluster(detectCores())
@@ -20,6 +20,12 @@ data = foreach(fid = 1:24, .combine = rbind) %:%
     
     X = createInitialSample(50 * dim, dim, control = list(init_sample.type = "lhs", init_sample.lower = -5, init_sample.upper = 5))
     y = apply(X, 1, f)
+    
+    # Normalize X
+    X = (X + 5)/10
+    # Standardize y
+    y = (y - mean(y))/sd(y)
+    
     feat_object = createFeatureObject(X = X, y = y, blocks = 1)
     
     
@@ -40,4 +46,4 @@ data = foreach(fid = 1:24, .combine = rbind) %:%
 stopCluster(cl)
 
 
-write.csv(data, "data/ela_features_bbob.csv", row.names = F)
+write.csv(data, "data/ela_features_bbob_norm.csv", row.names = F)
