@@ -106,3 +106,14 @@ resources.serial.default = list(
 jobs = findJobs()
 submitJobs(jobs, resources = resources.serial.default)
 
+done = findDone()
+results = reduceResultsList(done, function(x, job) {
+  x[, best_y := cummin(y)]
+  x[, iter := seq_len(.N)]
+  x[, repl := job$repl]
+  x
+})
+results = rbindlist(results, fill = TRUE)
+saveRDS(results, "results/results.rds")
+
+

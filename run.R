@@ -72,7 +72,7 @@ eval_ = function(job, data, instance, ...) {
   xs = list(...)
   tuner = xs$tuner$clone(deep = TRUE)
   factor = if (xs$tuner_id == "random_search") {
-    200L  # FIXME:
+    400L
   } else {
     50L
   }
@@ -131,6 +131,7 @@ tasks = setNames(sapply(openml_ids, function(id) {
   task = pl$train(task)[[1L]]
   task
 }), nm = as.character(openml_ids))
+names(openml_ids) = map_chr(tasks, "id")
 #instances = setDT(rbind(expand.grid(openml_id = openml_ids, learner_id = "svm", dim = 2L), expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L))))
 instances = setDT(expand.grid(openml_id = openml_ids, learner_id = "xgboost", dim = c(2L, 3L, 5L)))
 
@@ -188,21 +189,31 @@ expired = jobs[job.id %in% findExpired()$job.id]
 resources.large = list(memory = 8048L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(expired, resources = resources.large)
 
+# FIXME:
 tab = getJobTable()
 tab = tab[job.id %in% findDone()$job.id]
-results = map_dtr(names(tuners), function(tuner_id) {
-  if (tuner_id != "irace") {
-    ids = tab[grepl(tuner_id, x = tags)]$job.id
-    results = reduceResultsDataTable(ids, fun = function(x, job) {
-      data = x$data
-      data[, method := tuner_id]
-      data[, best_logloss := cummin(classif.logloss)]
-      data[, task := job$instance$task$id]
-      data[, repl := job$repl]
-      data
-    })
-    rbindlist(results$result, fill = TRUE)
-  }
-}, .fill = TRUE)
+results = reduceResultsDataTable(tab$job.id, fun = function(x, job) {
+  data = x$data
+  data[, method := job$algo.pars$tuner_id]
+  data[, best_logloss := cummin(classif.logloss)]
+  data[, task := job$instance$task$id]
+  data[, dim := job$instance$dim]
+  data[, repl := job$repl]
+  data
+})
+results = rbindlist(results$result, fill = TRUE)
 saveRDS(results, "/gscratch/lschnei8/ela_newdata_large_results.rds")
+
+# runtime
+openml_ids = as.character(c(40983, 469, 41156, 6332, 23381, 1590, 1461, 40975, 41146, 40685))
+names(openml_ids) = c("wilt", "analcatdata_dmft", "ada", "cylinder-bands", "dresses-sales", "adult", "bank-marketing", "car", "sylvine", "shuttle"     )
+tab = getJobTable()  # 3.172658 CPU years
+tab = tab[job.id %in% findDone()$job.id]
+tab[, method := map_chr(algo.pars, function(x) x$tuner_id)]
+tab[, task_id := map_chr(problem, function(x) strsplit(x, "_")[[1L]][1L])]
+tab[, dim := map_chr(problem, function(x) strsplit(x, "_")[[1L]][3L])]
+tab[, task := map_chr(task_id, function(x) names(openml_ids)[which(openml_ids == x)])]
+tab[, problem := paste0(task, "_", dim)]
+
+saveRDS(tab[, c("method", "dim", "task", "problem", "repl", "time.running")], "/gscratch/lschnei8/ela_newdata_large_jobs.rds")
 

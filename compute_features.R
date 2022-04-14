@@ -2,10 +2,10 @@ library(flacco)
 library(data.table)
 library(mlr3misc)
 
-data = read_rds("data/design.rds")
+data = readRDS("data/design.rds")
+bounds = list(nrounds = c(log(3), log(2000)), eta = c(-7, 0), lambda = c(-7, 7), gamma = c(-10, 2), alpha = c(-7, 7))  # see run.R
 
-sets_to_compute = c("ela_meta", "ic", "limo", "ela_distr", "pca", "nbc", "disp")
-sets_to_compute = c("ela_meta", "ela_distr", "ic")
+sets_to_compute = c("ela_meta", "ic", "ela_distr", "nbc", "disp")
 
 number_of_peaks = function(x, smoothing.bandwidth = "SJ", 
   modemass.threshold = 0.01, ...) {
@@ -26,8 +26,12 @@ number_of_peaks = function(x, smoothing.bandwidth = "SJ",
 
 assignInNamespace("number_of_peaks", number_of_peaks, ns = "flacco")
 
-data[, problem := paste0(task, dim)]
 params = c("nrounds", "eta", "lambda", "gamma", "alpha")
+data[, problem := paste0(task, dim)]
+data[, classif.logloss := (classif.logloss -  mean(classif.logloss)) / sd(classif.logloss), by = problem]  # standardized
+for (feature in params) {
+  data[, (feature) := (get(feature) - bounds[[feature]][1L]) / (bounds[[feature]][2L] - bounds[[feature]][1L])]
+}
 
 ela_features = map_dtr(unique(data$task), function(task_) {
   map_dtr(unique(data$dim), function(dim_) {
@@ -41,15 +45,5 @@ ela_features = map_dtr(unique(data$task), function(task_) {
   })
 })
 
-saveRDS(ela_features, "ela_features_design.rds")
-
-data = ela_features[, - c("task", "dim", grep("costs", colnames(ela_features), value = TRUE)), with = FALSE]
-
-data = scale(data)
-
-kk = kmeans(data, 4, nstart = 25)
-
-library(factoextra)
-
-fviz_cluster(kk, data = data)
+saveRDS(ela_features, "data/ela_features_design.rds")
 
