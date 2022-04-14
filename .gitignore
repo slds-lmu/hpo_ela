@@ -1,4 +1,7 @@
-*.png
-*.rds
-data/
 attic/
+data/result_cma-gensa-grid.rds
+data/result_mbo_d2.rds
+data/result_mbo_d3.rds
+data/result_mbo_d5.rds
+data/result_random_search.rds
+
