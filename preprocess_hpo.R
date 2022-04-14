@@ -26,10 +26,10 @@ sum(runtime_jobs$time.running) / 3600 / 24 / 365  # 2.2 CPU years for HPO
 sum(runtime_jobs_agg[, sum_overall - learners])  # 27 CPU days for BBOB
 
 design = dat[repl == 1 & method == "design", c("nrounds", "eta", "lambda", "gamma", "alpha", "task", "dim", "classif.logloss")]
-#saveRDS(design, "data/design.rds")
+#saveRDS(design, "data/results_design_hpo.rds")
 optimizers = dat[method != "design"]
 optimizers[method == "mbo", batch_nr := seq_len(.N), by = .(task, dim, repl)]
-#saveRDS(optimizers, "data/optimizers.rds")
+#saveRDS(optimizers, "data/results_all_hpo.rds")
 
 design_2d = design[dim == 2, c("nrounds", "eta", "task", "classif.logloss"), with = FALSE]
 

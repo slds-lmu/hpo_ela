@@ -12,14 +12,14 @@ bold = function(x) {paste("\\textbf{", x, "}", sep = "")}
 source("predict_kmeans.R")
 
 # load ela hpo
-ela_hpo = readRDS("data/ela_features_design.rds")
+ela_hpo = readRDS("data/ela_features_hpo_norm.rds")
 ela_hpo = ela_hpo[, colnames(ela_hpo) %nin% grep("costs", colnames(ela_hpo), value = TRUE), with = FALSE]
 ela_hpo[, problem := paste0(task, "_", dim)]
 ela_hpo = ela_hpo[, - "task"]
 ela_hpo[, type := "hpo"]
 
 # load ela bbob
-ela_bbob = setDT(read.csv("data/ela_features_bbob_norm.csv"))
+ela_bbob = setDT(read.rds("data/ela_features_bbob_norm.rds"))
 ela_bbob[, problem := paste0(fid, "_", iid, "_", dim)]
 ela_bbob = ela_bbob[rep == 1]
 ela_bbob = ela_bbob[, colnames(ela_bbob)[colnames(ela_bbob) %in% colnames(ela_hpo)], with = FALSE]  # subset to hpo ela features

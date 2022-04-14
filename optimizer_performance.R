@@ -71,7 +71,7 @@ plotCD(tmp, cex = 1.5)
 dev.off()
 
 ### HPO
-hpo = readRDS("data/optimizers.rds")
+hpo = readRDS("data/results_all_hpo.rds")
 hpo[, budget := 50L * dim]
 hpo[, problem := paste0(task, "_", dim)]
 hpo = hpo[batch_nr <= budget]

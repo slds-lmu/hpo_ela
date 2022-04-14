@@ -46,4 +46,4 @@ data = foreach(fid = 1:24, .combine = rbind) %:%
 stopCluster(cl)
 
 
-write.csv(data, "data/ela_features_bbob_norm.csv", row.names = F)
+saveRDS(data, "data/ela_features_bbob_norm.rds")

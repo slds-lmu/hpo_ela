@@ -4,7 +4,7 @@ library(ggplot2)
 library(gridExtra)
 
 # HPO, reference is median best performance of random search with equal 50d budget
-hpo = readRDS("data/optimizers.rds")
+hpo = readRDS("data/results_all_hpo.rds")
 hpo[, budget := 50L * dim]
 
 best_rs = hpo[batch_nr <= budget & method == "random_search", .(target = min(best_logloss)), by = .(task, dim, repl)]

@@ -189,7 +189,7 @@ expired = jobs[job.id %in% findExpired()$job.id]
 resources.large = list(memory = 8048L, ntasks = 1L, ncpus = 1L, nodes = 1L, clusters = "teton", max.concurrent.jobs = 1000L)
 submitJobs(expired, resources = resources.large)
 
-# FIXME:
+# collect results
 tab = getJobTable()
 tab = tab[job.id %in% findDone()$job.id]
 results = reduceResultsDataTable(tab$job.id, fun = function(x, job) {
@@ -204,10 +204,10 @@ results = reduceResultsDataTable(tab$job.id, fun = function(x, job) {
 results = rbindlist(results$result, fill = TRUE)
 saveRDS(results, "/gscratch/lschnei8/ela_newdata_large_results.rds")
 
-# runtime
+# collect runtime
 openml_ids = as.character(c(40983, 469, 41156, 6332, 23381, 1590, 1461, 40975, 41146, 40685))
-names(openml_ids) = c("wilt", "analcatdata_dmft", "ada", "cylinder-bands", "dresses-sales", "adult", "bank-marketing", "car", "sylvine", "shuttle"     )
-tab = getJobTable()  # 3.172658 CPU years
+names(openml_ids) = c("wilt", "analcatdata_dmft", "ada", "cylinder-bands", "dresses-sales", "adult", "bank-marketing", "car", "sylvine", "shuttle")
+tab = getJobTable()
 tab = tab[job.id %in% findDone()$job.id]
 tab[, method := map_chr(algo.pars, function(x) x$tuner_id)]
 tab[, task_id := map_chr(problem, function(x) strsplit(x, "_")[[1L]][1L])]

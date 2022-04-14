@@ -2,7 +2,7 @@ library(flacco)
 library(data.table)
 library(mlr3misc)
 
-data = readRDS("data/design.rds")
+data = readRDS("data/results_design_hpo.rds")
 bounds = list(nrounds = c(log(3), log(2000)), eta = c(-7, 0), lambda = c(-7, 7), gamma = c(-10, 2), alpha = c(-7, 7))  # see run.R
 
 sets_to_compute = c("ela_meta", "ic", "ela_distr", "nbc", "disp")
@@ -45,5 +45,5 @@ ela_features = map_dtr(unique(data$task), function(task_) {
   })
 })
 
-saveRDS(ela_features, "data/ela_features_design.rds")
+saveRDS(ela_features, "data/ela_features_hpo_norm.rds")
 
