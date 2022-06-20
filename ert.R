@@ -41,7 +41,7 @@ plots = map(unique(ert$dim), function(dim_) {
     geom_tile(aes(fill = ert_ratio)) +
     geom_text(aes(label = round(ert_ratio, 2))) +
     scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-    labs(x = "Method", y = "Task", fill = "ERT Ratio", title = dim_) +
+    labs(x = "Optimizer", y = "Task", fill = "ERT Ratio", title = dim_) +
     theme_minimal(base_size = 14)
 })
 
@@ -55,7 +55,7 @@ g = ert_agg_hpo = ggplot(ert_agg, aes(x = method, y = as.factor(dim))) +
   geom_tile(aes(fill = mean_ert)) +
   geom_text(aes(label = round(mean_ert, 2))) +
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-  labs(x = "Method", y = "Dimensionality", fill = "Mean ERT Ratio") +
+  labs(x = "Optimizer", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
 ggsave("plots/hpo_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
@@ -109,7 +109,7 @@ for (iidx in 1:5) {
       geom_tile(aes(fill = ert_ratio)) +
       geom_text(aes(label = round(ert_ratio, 2))) +
       scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-      labs(x = "Method", y = "FID", fill = "ERT Ratio", title = dim_) +
+      labs(x = "Optimizer", y = "FID", fill = "ERT Ratio", title = dim_) +
       theme_minimal(base_size = 14)
   })
   
@@ -124,7 +124,7 @@ g = ert_agg_bbob = ggplot(ert_agg, aes(x = optimizer, y = as.factor(dim))) +
   geom_tile(aes(fill = mean_ert)) +
   geom_text(aes(label = round(mean_ert, 2))) +
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
-  labs(x = "Method", y = "Dimensionality", fill = "Mean ERT Ratio") +
+  labs(x = "Optimizer", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
 ggsave("plots/bbob_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
