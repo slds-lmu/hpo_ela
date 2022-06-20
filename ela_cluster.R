@@ -91,18 +91,13 @@ xtabs( ~ cluster + group, data = ela)
 
 nearest_bbob = map_chr(1:30, function(i) {
   x = pca_dat[i, ]
-  names(which.min(sqrt(rowSums((x - pca_dat[31:390, ]) ^ 2))))
+  distances = map_dbl(31:390, function(j) {
+    sqrt(sum((x - pca_dat[j, ]) ^ 2))
+  })
+  rownames(pca_dat[31:390, ])[which.min(distances)]
 })
 
 hpo_nearest_bbob = data.table(problem = ela[1:30, ]$problem, nearest_bbob = nearest_bbob)
 
 saveRDS(hpo_nearest_bbob, "data/hpo_nearest_bbob.rds")
 
-nearest_bbob_all = map_chr(1:30, function(i) {
-  x = ela_x[i, ]
-  ela[31:390, ][which.min(sqrt(rowSums((x - ela_x[31:390, ]) ^ 2))), ]$problem
-})
-
-hpo_nearest_bbob_all = data.table(problem = ela[1:30, ]$problem, nearest_bbob = nearest_bbob_all)
-
-saveRDS(hpo_nearest_bbob_all, "data/hpo_nearest_bbob_all.rds")
