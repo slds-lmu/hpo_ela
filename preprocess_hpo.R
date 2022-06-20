@@ -40,7 +40,7 @@ surf.colors = function(x, breaks, col) {
   colors
 }
 
-png(paste0("plots/tasks_2D_small.png"), width = 16, height = 8, units = "in", res = 150, pointsize = 10)
+pdf(paste0("plots/tasks_2D_small.pdf"), width = 16, height = 8, pointsize = 10)
 par(mfrow = c(2, 5), tcl = -0.6)
 for (task_ in unique(design_2d$task)) {
   orig = design_2d[task == task_]
@@ -81,11 +81,11 @@ plots = map(unique(design_3d$task), function(task_) {
   })
   col = terrain.colors(21)
   breaks = quantile(unlist(res), c(0, 0.001, 0.005, 1:10 / 100, seq(20, 100, by = 10) / 100))
-  png(paste0("plots/", task_, "_3D.png"), width = 10, height = 5, units = "in", res = 150)
+  pdf(paste0("plots/", task_, "_3D.pdf"), width = 10, height = 5, pointsize = 10)
   par(mfrow = c(2, 5))
   for (i in seq_len(10)) {
     colors = surf.colors(res[[i]], breaks = breaks, col = col)
-    persp(x = grid[[1L]], y = grid[[2L]], z = res[[i]], xlab = "nrounds", ylab = "eta", zlab = "log classif.logloss", col = colors, theta = 60, phi = 30, main = paste0("lambda = ", round(grid[[3L]][i], 2)), border = NA, cex.lab = 0.9)
+    persp(x = grid[[1L]], y = grid[[2L]], z = res[[i]], xlab = "nrounds", ylab = "eta", zlab = "logloss", col = colors, theta = 60, phi = 30, main = paste0("lambda = ", round(grid[[3L]][i], 2)), border = NA, cex.lab = 0.9)
   }
   dev.off()
   NULL

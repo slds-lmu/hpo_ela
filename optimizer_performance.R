@@ -49,21 +49,21 @@ tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 581.51, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 # 2D
-png("plots/bbob_cd_2.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/bbob_cd_2.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(bbob_agg[dim == 2L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 154.55, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 3D
-png("plots/bbob_cd_3.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/bbob_cd_3.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(bbob_agg[dim == 3L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 219.16, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 5D
-png("plots/bbob_cd_5.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/bbob_cd_5.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(bbob_agg[dim == 5L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 258.69, df = 4, p-value < 2.2e-16
@@ -86,21 +86,21 @@ saveRDS(tmp_[, c("problem", "best")], "data/hpo_best.rds")
 friedmanTest(tmp)  # Friedman's chi-squared = 104.99, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 # 2D
-png("plots/hpo_cd_2.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/hpo_cd_2.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(hpo_agg[dim == 2L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 36.32, df = 4, p-value = 2.487e-07
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 3D
-png("plots/hpo_cd_3.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/hpo_cd_3.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(hpo_agg[dim == 3L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 34.32, df = 4, p-value = 6.407e-07
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 5D
-png("plots/hpo_cd_5.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/hpo_cd_5.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(hpo_agg[dim == 5L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 34.8, df = 4, p-value = 5.106e-07
@@ -141,7 +141,7 @@ g = ggplot(aes(x = iter, y = mean, colour = optimizer, fill = optimizer), data =
   theme_minimal(base_size = 18) + 
   theme(legend.position = "bottom")
 
-ggsave("plots/bbob_agg_normalized_regret.png", plot = g, width = 18, height = 5)
+ggsave("plots/bbob_agg_normalized_regret.pdf", plot = g, width = 18, height = 5, device = "pdf")
 
 ### HPO
 hpo[, best_overall := min(best_logloss), by = .(problem)]
@@ -176,12 +176,12 @@ g = ggplot(aes(x = batch_nr, y = mean, colour = method, fill = method), data = h
   theme_minimal(base_size = 18) +
   theme(legend.position = "bottom")
 
-ggsave("plots/hpo_agg_normalized_regret.png", plot = g, width = 18, height = 5)
+ggsave("plots/hpo_agg_normalized_regret.pdf", plot = g, width = 18, height = 5, device = "pdf")
 
 # BBOB closest to HPO
 hpo_nearest_bbob = readRDS("data/hpo_nearest_bbob.rds")
 print(xtable(hpo_nearest_bbob), include.rownames = FALSE)
-png("plots/bbob_cd_closest_hpo.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/bbob_cd_closest_hpo.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(bbob_agg[problem %in% hpo_nearest_bbob$nearest_bbob] , problem ~ optimizer, value.var = "mean_best_y")[, -1])
 friedmanTest(tmp)  # Friedman's chi-squared = 42.779, df = 4, p-value = 1.15e-08
 plotCD(tmp, cex = 1.5)
@@ -229,9 +229,9 @@ g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = optimizer, fill = optimi
   theme_minimal(base_size = 18) + 
   theme(legend.position = "bottom")
 
-ggsave("plots/bbob_closest_normalized_regret.png", plot = g, width = 8, height = 5)
+ggsave("plots/bbob_closest_normalized_regret.pdf", plot = g, width = 8, height = 5, device = "pdf")
 
-png("plots/hpo_cd.png", width = 6, height = 4, units = "in", res = 150)
+pdf("plots/hpo_cd.pdf", width = 6, height = 4)
 tmp = - as.matrix(dcast(hpo_agg, problem ~ method, value.var = "mean_best_logloss")[, -1])
 friedmanTest(tmp)  # Friedman's chi-squared = 104.99, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
@@ -266,5 +266,5 @@ g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = method, fill = method), 
   theme_minimal(base_size = 18) +
   theme(legend.position = "bottom")
 
-ggsave("plots/hpo_closest_normalized_regret.png", plot = g, width = 8, height = 5)
+ggsave("plots/hpo_closest_normalized_regret.pdf", plot = g, width = 8, height = 5, device = "pdf")
 

@@ -47,7 +47,7 @@ plots = map(unique(ert$dim), function(dim_) {
 
 g = grid.arrange(grobs = plots, nrow = 1L, ncol = length(plots))
 
-ggsave("plots/hpo_erts_rs_50.png", plot = g, width = 20, height = 5)
+ggsave("plots/hpo_erts_rs_50.pdf", plot = g, width = 20, height = 5, device = "pdf")
 
 ert_agg = ert[, .(mean_ert = mean(ert_ratio), se_ert = sd(ert_ratio) / sqrt(.N)), by = .(method, dim)]
 
@@ -58,7 +58,7 @@ g = ert_agg_hpo = ggplot(ert_agg, aes(x = method, y = as.factor(dim))) +
   labs(x = "Method", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
-ggsave("plots/hpo_erts_rs_50_agg.png", plot = g, width = 6, height = 4)
+ggsave("plots/hpo_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
 
 # BBOB, reference is median best performance of random search with equal 50d budget
 random = readRDS("data/result_random_search_clean.rds")
@@ -115,7 +115,7 @@ for (iidx in 1:5) {
   
   g = grid.arrange(grobs = plots, nrow = 1L, ncol = length(plots))
   
-  ggsave(paste0("plots/bbob_erts_rs_50_", iidx, ".png"), plot = g, width = 20, height = 5)
+  ggsave(paste0("plots/bbob_erts_rs_50_", iidx, ".pdf"), plot = g, width = 20, height = 5, device = "pdf")
 }
 
 ert_agg = ert[, .(mean_ert = mean(ert_ratio), se_ert = sd(ert_ratio) / sqrt(.N)), by = .(optimizer, dim)]
@@ -127,5 +127,5 @@ g = ert_agg_bbob = ggplot(ert_agg, aes(x = optimizer, y = as.factor(dim))) +
   labs(x = "Method", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
-ggsave("plots/bbob_erts_rs_50_agg.png", plot = g, width = 6, height = 4)
+ggsave("plots/bbob_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
 

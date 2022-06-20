@@ -19,7 +19,7 @@ ela_hpo = ela_hpo[, - "task"]
 ela_hpo[, type := "hpo"]
 
 # load ela bbob
-ela_bbob = setDT(read.rds("data/ela_features_bbob_norm.rds"))
+ela_bbob = setDT(readRDS("data/ela_features_bbob_norm.rds"))
 ela_bbob[, problem := paste0(fid, "_", iid, "_", dim)]
 ela_bbob = ela_bbob[rep == 1]
 ela_bbob = ela_bbob[, colnames(ela_bbob)[colnames(ela_bbob) %in% colnames(ela_hpo)], with = FALSE]  # subset to hpo ela features
@@ -50,7 +50,7 @@ g = ggplot(loadings_, aes(feature, abs(loading), fill = loading)) +
   xlab("ELA Feature") +
   ylab("Loading Strength") +
   theme_minimal(base_size = 14)
-ggsave("plots/ela_pca_loadings.png", plot = g, width = 12, height = 6)
+ggsave("plots/ela_pca_loadings.pdf", plot = g, width = 12, height = 6, device = "pdf")
 
 fviz_nbclust(pca_dat, kmeans, method = "wss", k.max = 40)
 fviz_nbclust(pca_dat, kmeans, method = "silhouette")
@@ -61,7 +61,7 @@ g = g +
   geom_text(aes(x = x, y = y, label = name, colour = cluster), size = 4, data = g$data[1:30, ], show.legend = FALSE) +
   labs(title = NULL, colour = "Cluster", fill = "Cluster", shape = "Cluster") +
   theme_minimal(base_size = 14)
-ggsave("plots/ela_cluster.png", plot = g, width = 10, height = 6)
+ggsave("plots/ela_cluster.pdf", plot = g, width = 10, height = 6, device = "pdf")
 
 gg_color_hue = function(n) {
   hues = seq(15, 375, length = n + 1)
@@ -76,7 +76,7 @@ set.seed(1)
 rr = resample(task_cluster, learner, rsmp("repeated_cv", repeats = 10L, folds = 10L))
 rr$aggregate()  # classif.ce 0.1380757
 learner$train(task_cluster)
-png("plots/classify_cluster_rp.png", width = 8, height = 4, units = "in", res = 150)
+pdf("plots/classify_cluster_rp.pdf", width = 8, height = 4)
 rpart.plot(learner$model, roundint = FALSE, box.palette = 0, tweak = 1.2)
 dev.off()
 
