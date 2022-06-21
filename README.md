@@ -17,6 +17,7 @@ The repository is structured as follows:
   * `ela_analysis.R` contains code for the analysis of ELA features
   * `ela_cluster.R` contains code for the cluster analysis of ELA features
   * `predict_kmeans.R` contains helper code for predicting in k-means clustering
+  * `tasks_cv_splits.R` contains code to generate the CV splits used for the HPO problems
   * `renv.lock` lists the exact R packages that were used on the cluster and can be used for setting up an
     [renv](https://github.com/rstudio/renv/) environment
   * `appendix.pdf` is our online appendix

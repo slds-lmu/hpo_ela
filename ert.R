@@ -58,7 +58,7 @@ g = ert_agg_hpo = ggplot(ert_agg, aes(x = method, y = as.factor(dim))) +
   labs(x = "Optimizer", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
-ggsave("plots/hpo_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
+ggsave("plots/hpo_erts_rs_50_agg.pdf", plot = g, width = 6, height = 3, device = "pdf")
 
 # BBOB, reference is median best performance of random search with equal 50d budget
 random = readRDS("data/result_random_search_clean.rds")
@@ -127,5 +127,5 @@ g = ert_agg_bbob = ggplot(ert_agg, aes(x = optimizer, y = as.factor(dim))) +
   labs(x = "Optimizer", y = "Dimensionality", fill = "Mean ERT Ratio") +
   theme_minimal(base_size = 14)
 
-ggsave("plots/bbob_erts_rs_50_agg.pdf", plot = g, width = 6, height = 4, device = "pdf")
+ggsave("plots/bbob_erts_rs_50_agg.pdf", plot = g, width = 6, height = 3, device = "pdf")
 

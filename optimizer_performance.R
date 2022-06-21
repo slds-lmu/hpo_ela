@@ -49,21 +49,21 @@ tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 581.51, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 # 2D
-pdf("plots/bbob_cd_2.pdf", width = 6, height = 4)
+pdf("plots/bbob_cd_2.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(bbob_agg[dim == 2L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 154.55, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 3D
-pdf("plots/bbob_cd_3.pdf", width = 6, height = 4)
+pdf("plots/bbob_cd_3.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(bbob_agg[dim == 3L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 219.16, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 5D
-pdf("plots/bbob_cd_5.pdf", width = 6, height = 4)
+pdf("plots/bbob_cd_5.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(bbob_agg[dim == 5L], problem ~ optimizer, value.var = "mean_best_y")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 258.69, df = 4, p-value < 2.2e-16
@@ -86,21 +86,21 @@ saveRDS(tmp_[, c("problem", "best")], "data/hpo_best.rds")
 friedmanTest(tmp)  # Friedman's chi-squared = 104.99, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
 # 2D
-pdf("plots/hpo_cd_2.pdf", width = 6, height = 4)
+pdf("plots/hpo_cd_2.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(hpo_agg[dim == 2L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 36.32, df = 4, p-value = 2.487e-07
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 3D
-pdf("plots/hpo_cd_3.pdf", width = 6, height = 4)
+pdf("plots/hpo_cd_3.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(hpo_agg[dim == 3L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 34.32, df = 4, p-value = 6.407e-07
 plotCD(tmp, cex = 1.5)
 dev.off()
 # 5D
-pdf("plots/hpo_cd_5.pdf", width = 6, height = 4)
+pdf("plots/hpo_cd_5.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(hpo_agg[dim == 5L], problem ~ method, value.var = "mean_best_logloss")[, -1])
 tmp = na.omit(tmp)
 friedmanTest(tmp)  # Friedman's chi-squared = 34.8, df = 4, p-value = 5.106e-07
@@ -181,9 +181,9 @@ ggsave("plots/hpo_agg_normalized_regret.pdf", plot = g, width = 18, height = 5, 
 # BBOB closest to HPO
 hpo_nearest_bbob = readRDS("data/hpo_nearest_bbob.rds")
 print(xtable(hpo_nearest_bbob), include.rownames = FALSE)
-pdf("plots/bbob_cd_closest_hpo.pdf", width = 6, height = 4)
+pdf("plots/bbob_cd_closest_hpo.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(bbob_agg[problem %in% hpo_nearest_bbob$nearest_bbob] , problem ~ optimizer, value.var = "mean_best_y")[, -1])
-friedmanTest(tmp)  # Friedman's chi-squared = 42.779, df = 4, p-value = 1.15e-08
+friedmanTest(tmp)  # Friedman's chi-squared = 61.007, df = 4, p-value = 1.781e-12
 plotCD(tmp, cex = 1.5)
 dev.off()
 
@@ -205,17 +205,20 @@ get_incumbent_cumbudget = function(incumbent, cumbudget_scaled) {
 bbob_budget = bbob[, .(incumbent_budget = get_incumbent_cumbudget(regret, cumbudget_scaled), cumbudget_scaled = seq(0, 1, length.out = 101)), by = .(optimizer, problem, repl)]
 bbob_agg_budget = bbob_budget[problem %in% hpo_nearest_bbob$nearest_bbob, .(mean = mean(incumbent_budget), se = sd(incumbent_budget) / sqrt(.N)), by = .(optimizer, problem, cumbudget_scaled)]
 bbob_agg_budget[, optimizer := factor(optimizer, levels = c("cmaes", "gensa", "grid_search", "mbo", "random_search"), labels = c("CMAES", "GENSA", "Grid", "MBO", "Random"))]
+bbob_agg_budget[, problem := factor(problem, levels = unique(hpo_nearest_bbob$nearest_bbob))]
 
-g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = optimizer, fill = optimizer), data = bbob_agg_budget) +
+g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = optimizer, fill = optimizer), data = bbob_agg_budget[cumbudget_scaled >= 0.08]) +
   scale_y_log10() +
   geom_step() +
   geom_stepribbon(aes(ymin = mean - se, ymax = mean + se), colour = NA, alpha = 0.1) +
-  facet_wrap(~ problem, scales = "free") +
+  facet_wrap(~ problem, scales = "free", nrow = 6, ncol = 5) +
   xlab("Fraction of Budget used") +
   ylab("Mean Normalized Regret") +
   labs(colour = "Optimizer", fill = "Optimizer") +
   theme_minimal(base_size = 18) + 
   theme(legend.position = "bottom")
+
+ggsave("plots/bbob_closest_normalized_regret_detailed.pdf", plot = g, width = 15, height = 18, device = "pdf")
 
 bbob_agg_agg_budget = bbob_agg_budget[, .(mean = mean(mean), se = sd(mean) / sqrt(.N)), by = .(optimizer, cumbudget_scaled)]
 
@@ -231,7 +234,7 @@ g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = optimizer, fill = optimi
 
 ggsave("plots/bbob_closest_normalized_regret.pdf", plot = g, width = 8, height = 5, device = "pdf")
 
-pdf("plots/hpo_cd.pdf", width = 6, height = 4)
+pdf("plots/hpo_cd.pdf", width = 6, height = 3)
 tmp = - as.matrix(dcast(hpo_agg, problem ~ method, value.var = "mean_best_logloss")[, -1])
 friedmanTest(tmp)  # Friedman's chi-squared = 104.99, df = 4, p-value < 2.2e-16
 plotCD(tmp, cex = 1.5)
@@ -242,17 +245,20 @@ hpo[, cumbudget_scaled := cumbudget / max(cumbudget), by = .(method, problem, re
 hpo_budget = hpo[, .(incumbent_budget = get_incumbent_cumbudget(regret, cumbudget_scaled), cumbudget_scaled = seq(0, 1, length.out = 101)), by = .(method, problem, repl)]
 hpo_agg_budget = hpo_budget[, .(mean = mean(incumbent_budget), se = sd(incumbent_budget) / sqrt(.N)), by = .(method, problem, cumbudget_scaled)]
 hpo_agg_budget[, method := factor(method, levels = c("cmaes", "gensa", "grid_search", "mbo", "random_search"), labels = c("CMAES", "GENSA", "Grid", "MBO", "Random"))]
+hpo_agg_budget[, problem := factor(problem, levels = unique(hpo_nearest_bbob$problem))]
 
-g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = method, fill = method), data = hpo_agg_budget) +
+g = ggplot(aes(x = cumbudget_scaled, y = mean, colour = method, fill = method), data = hpo_agg_budget[cumbudget_scaled >= 0.08]) +
   scale_y_log10() +
   geom_step() +
   geom_stepribbon(aes(ymin = mean - se, ymax = mean + se), colour = NA, alpha = 0.1) +
-  facet_wrap(~ problem, scales = "free") +
+  facet_wrap(~ problem, scales = "free", nrow = 6, ncol = 5) +
   xlab("Fraction of Budget used") +
   ylab("Mean Normalized Regret") +
   labs(colour = "Optimizer", fill = "Optimizer") +
   theme_minimal(base_size = 18) +
   theme(legend.position = "bottom")
+
+ggsave("plots/hpo_closest_normalized_regret_detailed.pdf", plot = g, width = 15, height = 18, device = "pdf")
 
 hpo_agg_agg_budget = hpo_agg_budget[, .(mean = mean(mean), se = sd(mean) / sqrt(.N)), by = .(method, cumbudget_scaled)]
 
