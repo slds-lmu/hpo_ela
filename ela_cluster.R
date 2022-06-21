@@ -60,6 +60,7 @@ g = g +
   geom_text(aes(x = x, y = y, label = name, colour = cluster), size = 3, alpha = 0.3, data = g$data[31:390, ], show.legend = FALSE) +
   geom_text(aes(x = x, y = y, label = name, colour = cluster), size = 4, data = g$data[1:30, ], show.legend = FALSE) +
   labs(title = NULL, colour = "Cluster", fill = "Cluster", shape = "Cluster") +
+  coord_fixed() +
   theme_minimal(base_size = 14)
 ggsave("plots/ela_cluster.pdf", plot = g, width = 10, height = 6, device = "pdf")
 
@@ -100,4 +101,16 @@ nearest_bbob = map_chr(1:30, function(i) {
 hpo_nearest_bbob = data.table(problem = ela[1:30, ]$problem, nearest_bbob = nearest_bbob)
 
 saveRDS(hpo_nearest_bbob, "data/hpo_nearest_bbob.rds")
+
+nearest_bbob_all = map_chr(1:30, function(i) {
+  x = ela_x[i, ]
+  distances = map_dbl(31:390, function(j) {
+    sqrt(sum((x - ela_x[j, ]) ^ 2))
+  })
+  ela[31:390, ]$problem[which.min(distances)]
+})
+
+hpo_nearest_bbob_all = data.table(problem = ela[1:30, ]$problem, nearest_bbob = nearest_bbob_all)
+
+saveRDS(hpo_nearest_bbob_all, "data/hpo_nearest_bbob_all.rds")
 
