@@ -6,8 +6,7 @@ The repository is structured as follows:
   * `plots/` contains plots as presented in the paper
   * `tasks/` contains data of all HPO tasks
   * `ela_splits.csv` contains the exact CV splits used for the HPO problems
-  * `run_hpo.R` and `run_bbob.R` contain code to run optimizers on HPO and BBOB problems
-  * `run_gensa_ablation` contains code to run the GENSA ablation study (see appendix)
+  * `run_hpo.R` and `run_bbob.R` contain code to run optimizers on HPO and BBOB problems; `run_gensa_ablation` contains code to run the GENSA ablation study (see appendix)
     * Job scheduling on HPCs was performed using [batchtools](https://github.com/mllg/batchtools)
     * If you are interested in the full batchtools registries with all available information, please open an issue
   * `compute_features_hpo.R` and `compute_features_bbob.R` contain code for computing ELA features on HPO and BBOB
