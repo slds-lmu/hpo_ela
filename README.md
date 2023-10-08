@@ -2,7 +2,7 @@ In this repository we release all code to replicate all results, tables and figu
 HPO X ELA: Investigating Hyperparameter Optimization Landscapes by Means of Exploratory Landscape Analysis
 
 The repository is structured as follows:
-  * `data/` contains raw benchmark data and preprocessed data used for analyses
+  * `data/` contains raw benchmark data and preprocessed data used for analyses.
     Note that you can also download the data via syncshare: https://syncandshare.lrz.de/getlink/fiNzyFM7s7jGkCEAzTyjS8/data
   * `plots/` contains plots as presented in the paper
   * `tasks/` contains data of all HPO tasks
