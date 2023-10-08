@@ -3,6 +3,7 @@ HPO X ELA: Investigating Hyperparameter Optimization Landscapes by Means of Expl
 
 The repository is structured as follows:
   * `data/` contains raw benchmark data and preprocessed data used for analyses
+    Note that you can also download the data via syncshare: https://syncandshare.lrz.de/getlink/fiNzyFM7s7jGkCEAzTyjS8/data
   * `plots/` contains plots as presented in the paper
   * `tasks/` contains data of all HPO tasks
   * `ela_splits.csv` contains the exact CV splits used for the HPO problems
